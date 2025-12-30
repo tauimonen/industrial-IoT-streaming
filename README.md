@@ -36,6 +36,17 @@ The streaming pipeline follows a **Medallion architecture**, consisting of three
 
 ## Production Line Machines and Sensors
 
+### Production Line Overview
+The simulated production line consists of six critical machines operating in a small-to-medium industrial manufacturing environment. The line produces precision metal components, such as gears and shafts, which require high accuracy, strict quality control, and continuous monitoring to prevent downtime and defects.
+
+### Product Description
+- Type: Precision metal components (gears, shafts, brackets)
+- Material: Steel or aluminum alloys
+- Production Characteristics:
+  - High precision and low tolerance deviation
+  - Batch-oriented workflow, but monitored continuously
+  - Critical monitoring for temperature, vibration, pressure, and operational speed to prevent defects and downtime
+
 | Machine ID | Machine Name                | Sensor Type(s)            | Measurement Unit | Realistic Value Range        | Notes / Purpose |
 |------------|----------------------------|--------------------------|----------------|-----------------------------|----------------|
 | 1          | Main Drive Motor           | Temperature, Vibration, Power Consumption | °C, g, kW      | Temp: 40–90°C<br>Vib: 0–0.08 g<br>Power: 10–50 kW | Critical motor; vibration indicates bearing health; power for load monitoring |
