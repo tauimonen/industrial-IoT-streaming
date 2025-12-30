@@ -203,5 +203,9 @@ cython_debug/
 
 # Marimo
 marimo/_static/
+
+#Terraform
+terraform.tfstate
+*.tfvars
 marimo/_lsp/
 __marimo__/
