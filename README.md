@@ -78,7 +78,9 @@ The simulated production line consists of six critical machines operating in a s
   - `main_motor_vibration`
   - `main_motor_power`  
   - ... (similar tables for each machine and sensor)
-- Preserves original event timestamps and values.  
+- Preserves original event timestamps and values.
+
+Bronze tables store raw sensor events without pipeline-specific processing metadata. Streaming offsets and Delta Lake checkpoints are used to guarantee exactly-once processing.
 
 ---
 
@@ -92,8 +94,10 @@ The simulated production line consists of six critical machines operating in a s
 - Normalizes schemas (`timestamp`, `machine_id`)  
 - Enriches events with **static machine metadata**:
   - Machine name  
-  - Type / location / line section  
-- Prepares data for analytics-ready aggregations.  
+  - Type / location / line section etc
+- Prepares data for analytics-ready aggregations.
+  
+Static machine metadata is maintained as a Silver-level Delta Live Table and used to enrich all sensor streams. The metadata describes machine function, location, criticality, and monitored sensor types, enabling contextualized monitoring and analytics across the production line.
 
 ---
 
