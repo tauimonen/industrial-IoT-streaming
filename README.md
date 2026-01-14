@@ -3,7 +3,7 @@
 
 ## Project Overview
 
-This project implements an industrial IoT streaming pipeline for monitoring the health and performance of a production line. Using Azure Databricks, Delta Live Tables (DLT), and the Medallion Architecture, the pipeline ingests simulated sensor data from six critical machines, validates and enriches it, and produces **analytics-ready metrics** for condition monitoring, predictive maintenance, and operational insight.  
+This project implements an industrial IoT streaming pipeline for monitoring the health and performance of a production line. Using Azure Databricks, Delta Live Tables (DLT), and the Medallion Architecture, the pipeline ingests simulated sensor data from six critical machines, validates and enriches it, and produces analytics-ready metrics for condition monitoring, predictive maintenance, and operational insight.  
 
 Each device emits continuous streaming data in Delta format, with event timestamps and randomized, realistic values.
 
@@ -60,11 +60,123 @@ The simulated production line consists of six critical machines operating in a s
 
 ## Data Generation Strategy
 
-- **Streaming simulation** using Python and Spark.  
+- Streaming simulation using Python and Spark.  
 - Each machine emits sensor readings every **60 seconds** with slight randomized latency.  
 - Event timestamps (`event_time`) are slightly randomized to simulate realistic IoT conditions.  
 - Multiple metrics per machine can be handled in separate Delta tables or combined streams.  
 - The generator supports **parallel streams** for all machines simultaneously.  
+
+---
+## Machine Health KPI
+
+### Overview
+
+The Machine Health KPI provides a single, interpretable indicator of the operational condition of each machine in the production line.  
+It is calculated continuously from multiple real-time sensor streams and aggregated in fixed time windows using Databricks Delta Live Tables (DLT).
+
+The KPI is designed to:
+- Detect early signs of mechanical degradation
+- Support predictive maintenance
+- Reduce unplanned downtime
+- Enable operational dashboards and automated alerts
+
+---
+
+### Input Signals
+
+The Machine Health KPI is derived from the following sensor metrics:
+
+| Sensor Metric | Description | Purpose |
+|--------------|------------|---------|
+| Temperature | Average operating temperature | Detects overheating and cooling issues |
+| Vibration | Maximum vibration level | Indicates bearing wear and mechanical imbalance |
+| Power Consumption | Average power usage | Reflects mechanical load and efficiency |
+
+All metrics are aggregated per machine using 10-minute tumbling windows based on event time.
+
+---
+
+### Normalization
+
+Each metric is normalized against a defined maximum safe operating threshold:
+
+| Metric | Normalization Formula | Max Threshold |
+|------|----------------------|---------------|
+| Temperature | `avg_temperature / 90` | 90 °C |
+| Vibration | `max_vibration / 0.08` | 0.08 g |
+| Power Load | `avg_power / 50` | 50 kW |
+
+Normalized values are capped at `1.0` to prevent outliers from skewing the KPI.
+
+---
+
+### Health Score Calculation
+
+The Machine Health Score is computed as a weighted inverse of the normalized metrics:
+
+Machine Health Score =
+100 × (
+0.30 × (1 − Temperature Score) +
+0.40 × (1 − Vibration Score) +
+0.30 × (1 − Load Score)
+)
+
+
+- Score range: 0–100
+- Higher score indicates a healthier machine
+- Vibration is weighted more heavily due to its strong correlation with mechanical failure
+
+---
+
+### Health Status Classification
+
+Each machine is assigned a categorical health status based on the computed score:
+
+| Health Score | Status | Interpretation |
+|-------------|--------|----------------|
+| ≥ 80 | HEALTHY | Normal operation |
+| 50–79 | WARNING | Degradation detected, maintenance recommended |
+| < 50 | CRITICAL | High failure risk, immediate action required |
+
+---
+
+### Output
+
+The KPI is stored in the Gold layer of the Databricks Delta Live Tables pipeline and includes:
+
+- Machine ID and machine name
+- Time window (start and end)
+- Aggregated sensor values
+- Machine Health Score
+- Machine Health Status
+
+This dataset is optimized for:
+- Databricks SQL dashboards
+- BI tools (Power BI, Tableau)
+- Alerting systems
+- Predictive maintenance analytics
+
+---
+
+### Implementation Environment
+
+The Machine Health KPI is implemented entirely within Databricks Delta Live Tables (DLT):
+
+- **Bronze layer**: raw sensor streams
+- **Silver layer**: validated and enriched sensor data with machine metadata
+- **Gold layer**: aggregated metrics, including the Machine Health KPI
+- Continuous computation and automatic handling of late-arriving data via event-time watermarking
+
+---
+
+### Why This KPI Matters
+
+By consolidating multiple sensor streams into a single health indicator, the Machine Health KPI enables:
+
+- Faster operational decision-making
+- Reduced monitoring noise
+- Scalable machine-level observability
+- Clear communication between engineering and operations teams
 
 ---
 
@@ -88,7 +200,7 @@ Bronze tables store raw sensor events without pipeline-specific processing metad
 
 **Notebook:** `02_silver_processing`  
 
-- Applies **DLT expectations** for:
+- Applies DLT expectations for:
   - Non-null `event_time`  
   - Valid sensor value ranges (as in the table above)  
 - Normalizes schemas (`timestamp`, `machine_id`)  
@@ -105,7 +217,7 @@ Static machine metadata is maintained as a Silver-level Delta Live Table and use
 
 **Notebook:** `03_gold_processing`  
 
-- Aggregates data into **10-minute tumbling windows** per machine:  
+- Aggregates data into 10-minute tumbling windows per machine:  
   - Average temperature  
   - Maximum vibration  
   - Maximum load / pressure / flow / current as appropriate  
