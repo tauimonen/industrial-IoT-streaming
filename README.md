@@ -248,8 +248,78 @@ Static machine metadata is maintained as a Silver-level Delta Live Table and use
 - **Historical analysis and KPI dashboards**  
 
 ---
+# Lessons Learned: Building a Delta Live Tables Streaming Pipeline
+
+## Overview
+This was streaming pipeline implementation using Databricks Delta Live Tables (DLT). The development process involved several challenging technical issues. Below are the key learnings that might help others avoid similar pitfalls.
+
+---
+
+### Issue 1: Data Quality Expectations Referencing Wrong Columns
+**Problem:** Pipeline execution failed due to expectations referencing original column names instead of renamed columns.
+
+**Key Learning:** Always ensure `@dlt.expect()` conditions reference the final column names after all transformations.
+
+---
+
+### Issue 2: Stream-to-Batch Join with Static Reference Data
+**Problem:** Unclear whether to use `dlt.read()` or `dlt.read_stream()` when joining static metadata with streaming sensor data.
+
+**Key Learning:**  
+- Use `dlt.read()` for static reference tables (like metadata).  
+- Use `dlt.read_stream()` for streaming data sources.  
+- Optionally, broadcast small static tables for join performance.
+
+---
+
+### Issue 3: PySpark Type Error with `least()` Function
+**Problem:** PySpark functions that operate on columns require Column objects, not raw literals.
+
+**Key Learning:** Always wrap numeric literals with `lit()` when using column-based functions like `least()`.
+
+---
+
+### Issue 4: Streaming Aggregation Without Watermark Fails in Append Mode
+**Problem:** Aggregations without watermarks caused pipeline to fail in append mode.
+
+**Key Learning:** Always set a watermark when performing streaming aggregations in append mode to handle late-arriving data.
+
+---
+
+### Issue 5: Stream-to-Stream Joins Can Produce Zero Rows
+**Problem:** Gold table remained empty despite data in silver tables due to event timestamp mismatches between streams.
+
+**Key Learning:**  
+- Aggregate each stream individually before joining.  
+- Avoid direct joins between streaming DataFrames during development.  
+- Use static or batch views for joins if possible.
+
+---
+
+### Issue 6: Windowing Delays Row Emission
+**Observation:** 10-minute windows combined with watermarks delayed output rows to the gold table.
+
+**Key Learning:**  
+- Use smaller windows during development to speed up testing.  
+- Understand that in production, rows will appear after window end plus the watermark interval.
+
+---
+
+## Bottom Line
+Building a Delta Live Tables streaming pipeline requires careful handling of:
+
+- Column references in expectations  
+- Watermarks for aggregations  
+- Static vs streaming data reads  
+- Stream-to-stream joins and event time alignment  
+- Window sizes and output latency  
+
+Step-by-step debugging and testing individual streams first greatly reduces the risk of empty outputs or runtime errors.
+
+---
 
 ## Author
 
 tauimonen  
 Azure Databricks · Data Engineering · Streaming Analytics
+---
