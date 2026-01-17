@@ -32,6 +32,8 @@ The streaming pipeline follows a **Medallion architecture**, consisting of three
 | **Gold Layer**                   | Aggregates data per machine into time windows (avg, max, min) and prepares metrics.         | Gold tables for dashboards, alerts, and analytics |
 | **Dashboards / Alerts / BI**     | Consumption layer for monitoring and decision-making; can integrate with Databricks SQL or BI tools. | Visualizations and operational insights       |
 
+![pipeline](pipeline.jpg)
+
 ---
 
 ## Production Line Machines and Sensors
